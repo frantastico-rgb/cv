@@ -1,0 +1,19 @@
+# Dependencias de Node.js
+# La carpeta node_modules se genera automáticamente al ejecutar 'npm install'
+node_modules
+
+# Archivo de variables de entorno locales
+# ¡NUNCA subir este archivo! Contiene información sensible.
+.env
+
+# Archivos de log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Directorio de build de Vercel
+.vercel
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db

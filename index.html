@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Francisco - Currículum Interactivo</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -663,7 +663,7 @@
                             <div class="language-item">
                                 <div class="language-flag">🇬🇧</div>
                                 <div class="language-name">Inglés</div>
-                                <div class="language-level">Avanzado</div>
+                                <div class="language-level">Intermedio</div>
                             </div>
                             <div class="language-item">
                                 <div class="language-flag">🇧🇷</div>
@@ -926,7 +926,7 @@
         <button class="floating-btn btn-email" onclick="openContactModal()" title="Contacto Profesional">
             <i class="fas fa-shield-alt"></i>
         </button>
-        <a href="https://wa.me/573201234567?text=Hola%20Francisco,%20vi%20tu%20curr%C3%ADculum%20y%20me%20interesa%20conocer%20m%C3%A1s%20sobre%20tu%20perfil%20para%20una%20oportunidad%20laboral%20en%20[EMPRESA].%20%C2%BFPodr%C3%ADas%20compartirme%20m%C3%A1s%20informaci%C3%B3n?" target="_blank" class="floating-btn btn-download" title="WhatsApp Profesional">
+        <a href="https://wa.me/573177132032?text=Hola%20Francisco,%20vi%20tu%20curr%C3%ADculum%20y%20me%20interesa%20conocer%20m%C3%A1s%20sobre%20tu%20perfil%20para%20una%20oportunidad%20laboral%20en%20[EMPRESA].%20%C2%BFPodr%C3%ADas%20compartirme%20m%C3%A1s%20informaci%C3%B3n?" target="_blank" class="floating-btn btn-download" title="WhatsApp Profesional">
             <i class="fab fa-whatsapp"></i>
         </a>
     </div>
@@ -1062,65 +1062,67 @@
             }
         }
 
-        // Función para enviar mensaje con validaciones anti-spam
-        function sendMessage(event) {
+        // Función para enviar mensaje con validaciones y llamada al backend
+        async function sendMessage(event) {
             event.preventDefault();
-            
-            const formData = new FormData(event.target);
+            const form = event.target;
+            const submitButton = form.querySelector('.submit-btn');
+            const originalButtonText = submitButton.innerHTML;
+
+            const formData = new FormData(form);
             const data = Object.fromEntries(formData);
             
-            // Validaciones anti-spam
+            // --- Validaciones (se mantienen igual) ---
             const spamKeywords = ['promoción', 'oferta', 'descuento', 'marketing', 'venta', 'curso', 'gratis'];
-            const messageText = data.message.toLowerCase();
-            const hasSpam = spamKeywords.some(keyword => messageText.includes(keyword));
-            
-            if (hasSpam) {
+            if (spamKeywords.some(keyword => data.message.toLowerCase().includes(keyword))) {
                 alert('❌ Este mensaje parece ser promocional. Solo acepto oportunidades laborales reales.');
                 return;
             }
             
-            // Validar email corporativo (no gmail, hotmail, etc.)
-            const email = data.email.toLowerCase();
             const personalDomains = ['gmail.com', 'hotmail.com', 'yahoo.com', 'outlook.com'];
-            const isPersonalEmail = personalDomains.some(domain => email.includes(domain));
-            
-            if (isPersonalEmail && !data.company.trim()) {
-                alert('⚠️ Para mayor seguridad, preferimos emails corporativos o que especifiques claramente tu empresa.');
+            if (personalDomains.some(domain => data.email.toLowerCase().includes(domain)) && !data.company.trim()) {
+                alert('⚠️ Para mayor seguridad, se recomiendan emails corporativos o especificar claramente la empresa.');
                 return;
             }
             
-            // Validar que el checkbox anti-spam esté marcado
             if (!data['not-spam']) {
                 alert('❌ Debes confirmar que esta es una oportunidad laboral real.');
                 return;
             }
-            
-            console.log('✅ Datos del formulario validados:', data);
-            
-            // Crear mensaje estructurado para análisis
-            const structuredMessage = `
-🏢 EMPRESA: ${data.company}
-👤 CONTACTO: ${data.name} (${data.position})
-📧 EMAIL: ${data.email}
-💼 TIPO: ${data.opportunity}
-💰 RANGO: ${data.budget || 'No especificado'}
-📝 DESCRIPCIÓN: ${data.message}
-            `;
-            
-            console.log('Mensaje estructurado:', structuredMessage);
-            
-            // Mostrar mensaje de éxito
-            alert('✅ ¡Oportunidad recibida! Si cumple con los criterios profesionales, te contactaré dentro de 48 horas.');
-            
-            // Cerrar modal y resetear formulario
-            closeContactModal();
-            event.target.reset();
-            
-            // En producción, aquí enviarías a tu servicio de email filtrado
-            // fetch('/send-professional-contact', { 
-            //     method: 'POST', 
-            //     body: JSON.stringify({...data, structuredMessage}) 
-            // })
+
+            // --- Lógica de Envío ---
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+            try {
+                const response = await fetch('/api/send-professional-contact', { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    // Éxito
+                    alert('✅ ¡Oportunidad recibida con éxito! Gracias por tu interés. Te contactaré pronto si el perfil encaja.');
+                    closeContactModal();
+                    form.reset();
+                } else {
+                    // Error del servidor
+                    const errorResult = await response.json();
+                    alert(`❌ Hubo un error al enviar el mensaje. Por favor, inténtalo de nuevo más tarde. (Error: ${errorResult.message || 'Desconocido'})`);
+                }
+
+            } catch (error) {
+                // Error de red o de conexión
+                console.error('Error de red al enviar el formulario:', error);
+                alert('❌ No se pudo conectar con el servidor. Revisa tu conexión a internet e inténtalo de nuevo.');
+            } finally {
+                // Restaurar el botón
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonText;
+            }
         }
 
         // Función para descargar CV
